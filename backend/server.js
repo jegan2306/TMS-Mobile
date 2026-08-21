@@ -42,6 +42,7 @@ app.use('/api/reports', reportRoutes);
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ticket_management';
 const PORT = process.env.PORT || 5000;
 
+console.log('Attempting MongoDB connection...');
 mongoose.connect(MONGO_URI)
   .then(() => {
     console.log('MongoDB Connected Successfully');
@@ -50,7 +51,10 @@ mongoose.connect(MONGO_URI)
     });
   })
   .catch(err => {
-    console.error('MongoDB Connection Error:', err);
+    console.error('MongoDB Connection Error Details:');
+    console.error('Message:', err.message);
+    console.error('Code:', err.code);
+    console.error('Full Error:', err);
     process.exit(1);
   });
 
