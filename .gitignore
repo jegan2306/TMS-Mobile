@@ -30,6 +30,10 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
+# Database data directory
+backend/data/
+**/data/
+
 # OS files
 .DS_Store
 Thumbs.db
