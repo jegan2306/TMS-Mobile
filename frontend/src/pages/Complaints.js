@@ -24,14 +24,13 @@ import {
   Select,
   FormControl,
   InputLabel,
-  TextField,
 } from '@mui/material';
-import { MoreVert as MoreIcon, Visibility as ViewIcon, Assignment as AssignIcon } from '@mui/icons-material';
+import { MoreVert as MoreIcon, Visibility as ViewIcon, Assignment as AssignIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { complaintAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const Complaints = () => {
-  const { isSuperAdmin, isStaff } = useAuth();
+  const { user, isSuperAdmin, isFaculty, isStaff } = useAuth();
   const [complaints, setComplaints] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,10 +42,10 @@ const Complaints = () => {
 
   useEffect(() => {
     fetchComplaints();
-    if (isSuperAdmin) {
+    if (isSuperAdmin || isFaculty) {
       fetchStaff();
     }
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, isFaculty]);
 
   const fetchComplaints = async () => {
     try {
@@ -62,7 +61,7 @@ const Complaints = () => {
   const fetchStaff = async () => {
     try {
       const response = await userAPI.getAll();
-      const staffRoles = ['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'];
+      const staffRoles = ['Faculty', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'];
       setStaff(response.data.filter(u => staffRoles.includes(u.role?.name)));
     } catch (error) {
       console.error('Error fetching staff:', error);
@@ -114,6 +113,23 @@ const Complaints = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    const complaintId = id || selectedComplaint?._id;
+    if (!complaintId) return;
+
+    if (window.confirm('Are you sure you want to delete this complaint?')) {
+      try {
+        await complaintAPI.delete(complaintId);
+        fetchComplaints();
+        handleMenuClose();
+        setViewOpen(false);
+      } catch (error) {
+        console.error('Error deleting complaint:', error);
+        alert(error.response?.data?.message || error.message || 'Error deleting complaint');
+      }
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Pending': return '#ed6c02';
@@ -125,8 +141,12 @@ const Complaints = () => {
     }
   };
 
-  const getTypeIcon = (type) => {
-    return type;
+  const canDelete = (complaint) => {
+    if (!complaint) return false;
+    if (isSuperAdmin) return true;
+    const currentUserId = user?.id || user?._id;
+    const creatorId = complaint.raisedBy?._id || complaint.raisedBy;
+    return Boolean(currentUserId && creatorId && String(currentUserId) === String(creatorId));
   };
 
   if (loading) {
@@ -205,8 +225,14 @@ const Complaints = () => {
 
       {/* Actions Menu */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleView}>View Details</MenuItem>
-        {isSuperAdmin && <MenuItem onClick={handleAssign}>Assign/Reassign</MenuItem>}
+        <MenuItem onClick={handleView}>
+          <ViewIcon fontSize="small" sx={{ mr: 1 }} /> View Details
+        </MenuItem>
+        {(isSuperAdmin || isFaculty) && (
+          <MenuItem onClick={handleAssign}>
+            <AssignIcon fontSize="small" sx={{ mr: 1 }} /> Assign/Reassign
+          </MenuItem>
+        )}
         {isStaff && (
           <MenuItem onClick={() => {
             handleMenuClose();
@@ -221,6 +247,11 @@ const Complaints = () => {
             handleStatusUpdate(selectedComplaint?._id, 'Completed');
           }}>
             Mark Completed
+          </MenuItem>
+        )}
+        {canDelete(selectedComplaint) && (
+          <MenuItem onClick={() => handleDelete(selectedComplaint?._id)} sx={{ color: 'error.main' }}>
+            <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Delete Complaint
           </MenuItem>
         )}
       </Menu>
@@ -274,6 +305,11 @@ const Complaints = () => {
           )}
         </DialogContent>
         <DialogActions>
+          {canDelete(selectedComplaint) && (
+            <Button color="error" startIcon={<DeleteIcon />} onClick={() => handleDelete(selectedComplaint?._id)}>
+              Delete
+            </Button>
+          )}
           <Button onClick={() => setViewOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>

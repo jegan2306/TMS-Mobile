@@ -66,7 +66,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     isSuperAdmin: user?.role?.name === 'Superadmin',
     isUser: user?.role?.name === 'User',
-    isStaff: ['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(user?.role?.name)
+    isFaculty: user?.role?.name === 'Faculty',
+    isStaff: ['Faculty', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(user?.role?.name)
   };
 
   return (

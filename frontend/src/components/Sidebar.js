@@ -11,7 +11,6 @@ import {
   Typography,
   Divider,
   Avatar,
-  Stack,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -29,16 +28,16 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['Superadmin', 'User', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'] },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['Superadmin', 'User', 'Faculty', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'] },
   { text: 'Departments', icon: <DepartmentIcon />, path: '/departments', roles: ['Superadmin'] },
   { text: 'Programmes', icon: <ProgrammeIcon />, path: '/programmes', roles: ['Superadmin'] },
   { text: 'Blocks', icon: <BlockIcon />, path: '/blocks', roles: ['Superadmin'] },
   { text: 'Rooms', icon: <RoomIcon />, path: '/rooms', roles: ['Superadmin'] },
   { text: 'Roles', icon: <RoleIcon />, path: '/roles', roles: ['Superadmin'] },
   { text: 'Users', icon: <UserIcon />, path: '/users', roles: ['Superadmin'] },
-  { text: 'Complaints', icon: <ComplaintIcon />, path: '/complaints', roles: ['Superadmin', 'User', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'] },
-  { text: 'Raise Complaint', icon: <RaiseIcon />, path: '/raise-complaint', roles: ['Superadmin', 'User'] },
-  { text: 'Reports', icon: <ReportIcon />, path: '/reports', roles: ['Superadmin'] },
+  { text: 'Complaints', icon: <ComplaintIcon />, path: '/complaints', roles: ['Superadmin', 'User', 'Faculty', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'] },
+  { text: 'Raise Complaint', icon: <RaiseIcon />, path: '/raise-complaint', roles: ['Superadmin', 'User', 'Faculty'] },
+  { text: 'Reports', icon: <ReportIcon />, path: '/reports', roles: ['Superadmin', 'Faculty'] },
 ];
 
 const Sidebar = ({ drawerWidth, mobileOpen, onClose, isMobile }) => {
@@ -66,6 +65,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onClose, isMobile }) => {
     switch (roleName) {
       case 'Superadmin': return '#4f46e5';
       case 'User': return '#06b6d4';
+      case 'Faculty': return '#ec4899';
       case 'Networking Staff': return '#10b981';
       case 'Plumber': return '#f59e0b';
       case 'Electrician': return '#f97316';

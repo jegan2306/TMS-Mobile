@@ -31,13 +31,17 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
   try {
     const { name } = req.body;
 
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Role name is required' });
+    }
+
     // Check if role exists
-    const existingRole = await Role.findOne({ name });
+    const existingRole = await Role.findOne({ name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } });
     if (existingRole) {
       return res.status(400).json({ message: 'Role already exists' });
     }
 
-    const role = new Role({ name });
+    const role = new Role({ name: name.trim() });
     await role.save();
 
     res.status(201).json({
@@ -45,6 +49,9 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
       role
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Role already exists' });
+    }
     res.status(500).json({ message: 'Error creating role', error: error.message });
   }
 });

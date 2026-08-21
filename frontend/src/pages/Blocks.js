@@ -96,7 +96,7 @@ const Blocks = () => {
       fetchData();
       handleClose();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error saving block');
+      setError(error.response?.data?.message || error.message || 'Error saving block');
     }
   };
 

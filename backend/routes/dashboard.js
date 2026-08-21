@@ -1,27 +1,36 @@
 const express = require('express');
 const router = express.Router();
 const Complaint = require('../models/Complaint');
-const { auth, isSuperAdmin, hasRole } = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
+
+const getRoleQuery = (user) => {
+  let query = {};
+  const roleName = user.role?.name;
+
+  if (roleName === 'User') {
+    query.raisedBy = user._id;
+  } else if (roleName === 'Faculty') {
+    const orConditions = [{ raisedBy: user._id }, { assignedTo: user._id }];
+    if (user.department) {
+      orConditions.push({ department: user.department._id || user.department });
+    }
+    query.$or = orConditions;
+  } else if (['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(roleName)) {
+    const orConditions = [{ assignedTo: user._id }];
+    if (user.department) {
+      orConditions.push({ department: user.department._id || user.department });
+    }
+    query.$or = orConditions;
+  } else if (roleName !== 'Superadmin' && user.department) {
+    query.department = user.department._id || user.department;
+  }
+  return query;
+};
 
 // Get dashboard statistics
 router.get('/stats', auth, async (req, res) => {
   try {
-    let query = {};
-
-    // Filter based on user role
-    if (req.user.role.name === 'User') {
-      // Users can only see their own complaints
-      query.raisedBy = req.user._id;
-    } else if (['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(req.user.role.name)) {
-      // Staff can only see complaints assigned to them
-      query.assignedTo = req.user._id;
-    }
-    // Superadmin can see all complaints
-
-    // Filter by department for non-superadmin
-    if (req.user.role.name !== 'Superadmin' && req.user.department) {
-      query.department = req.user.department._id;
-    }
+    const query = getRoleQuery(req.user);
 
     // Get total complaints count
     const totalComplaints = await Complaint.countDocuments(query);
@@ -57,19 +66,7 @@ router.get('/stats', auth, async (req, res) => {
 // Get complaint statistics by type
 router.get('/stats/by-type', auth, async (req, res) => {
   try {
-    let query = {};
-
-    // Filter based on user role
-    if (req.user.role.name === 'User') {
-      query.raisedBy = req.user._id;
-    } else if (['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(req.user.role.name)) {
-      query.assignedTo = req.user._id;
-    }
-
-    // Filter by department for non-superadmin
-    if (req.user.role.name !== 'Superadmin' && req.user.department) {
-      query.department = req.user.department._id;
-    }
+    const query = getRoleQuery(req.user);
 
     const stats = await Complaint.aggregate([
       { $match: query },
@@ -90,19 +87,7 @@ router.get('/stats/by-type', auth, async (req, res) => {
 // Get complaint statistics by status
 router.get('/stats/by-status', auth, async (req, res) => {
   try {
-    let query = {};
-
-    // Filter based on user role
-    if (req.user.role.name === 'User') {
-      query.raisedBy = req.user._id;
-    } else if (['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(req.user.role.name)) {
-      query.assignedTo = req.user._id;
-    }
-
-    // Filter by department for non-superadmin
-    if (req.user.role.name !== 'Superadmin' && req.user.department) {
-      query.department = req.user.department._id;
-    }
+    const query = getRoleQuery(req.user);
 
     const stats = await Complaint.aggregate([
       { $match: query },
@@ -121,3 +106,4 @@ router.get('/stats/by-status', auth, async (req, res) => {
 });
 
 module.exports = router;
+

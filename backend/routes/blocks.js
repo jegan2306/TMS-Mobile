@@ -40,13 +40,26 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
   try {
     const { name, department, programme } = req.body;
 
+    if (!name || !department || !programme) {
+      return res.status(400).json({ message: 'Block name, department, and programme are required' });
+    }
+
     // Check if programme exists
     const prog = await Programme.findById(programme);
     if (!prog) {
       return res.status(400).json({ message: 'Programme not found' });
     }
 
-    const block = new Block({ name, department, programme });
+    // Check for duplicate block in same programme
+    const existingBlock = await Block.findOne({
+      programme,
+      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') }
+    });
+    if (existingBlock) {
+      return res.status(400).json({ message: 'Block already exists in this programme' });
+    }
+
+    const block = new Block({ name: name.trim(), department, programme });
     await block.save();
 
     const populatedBlock = await Block.findById(block._id).populate('department').populate('programme');
@@ -56,6 +69,9 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
       block: populatedBlock
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Block already exists' });
+    }
     res.status(500).json({ message: 'Error creating block', error: error.message });
   }
 });

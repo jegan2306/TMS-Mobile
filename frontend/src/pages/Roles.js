@@ -76,7 +76,7 @@ const Roles = () => {
       fetchRoles();
       handleClose();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error saving role');
+      setError(error.response?.data?.message || error.message || 'Error saving role');
     }
   };
 

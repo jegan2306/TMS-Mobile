@@ -89,7 +89,7 @@ const Programmes = () => {
       fetchData();
       handleClose();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error saving programme');
+      setError(error.response?.data?.message || error.message || 'Error saving programme');
     }
   };
 

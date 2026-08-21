@@ -128,7 +128,7 @@ const Users = () => {
       fetchData();
       handleClose();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error saving user');
+      setError(error.response?.data?.message || error.message || 'Error saving user');
     }
   };
 
@@ -147,6 +147,7 @@ const Users = () => {
     switch (roleName) {
       case 'Superadmin': return '#d32f2f';
       case 'User': return '#1976d2';
+      case 'Faculty': return '#ec4899';
       case 'Networking Staff': return '#388e3c';
       case 'Plumber': return '#0288d1';
       case 'Electrician': return '#f57c00';

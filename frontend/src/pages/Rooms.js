@@ -104,7 +104,7 @@ const Rooms = () => {
       fetchData();
       handleClose();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error saving room');
+      setError(error.response?.data?.message || error.message || 'Error saving room');
     }
   };
 

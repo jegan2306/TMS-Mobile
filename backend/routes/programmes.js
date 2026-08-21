@@ -37,13 +37,29 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
   try {
     const { name, shortName, department } = req.body;
 
+    if (!name || !shortName || !department) {
+      return res.status(400).json({ message: 'Name, short name, and department are required' });
+    }
+
     // Check if department exists
     const dept = await Department.findById(department);
     if (!dept) {
       return res.status(400).json({ message: 'Department not found' });
     }
 
-    const programme = new Programme({ name, shortName, department });
+    // Check for existing programme with same name in same department
+    const existingProg = await Programme.findOne({
+      department,
+      $or: [
+        { name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } },
+        { shortName: { $regex: new RegExp(`^${shortName.trim()}$`, 'i') } }
+      ]
+    });
+    if (existingProg) {
+      return res.status(400).json({ message: 'Programme already exists in this department' });
+    }
+
+    const programme = new Programme({ name: name.trim(), shortName: shortName.trim(), department });
     await programme.save();
 
     const populatedProgramme = await Programme.findById(programme._id).populate('department');
@@ -53,6 +69,9 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
       programme: populatedProgramme
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Programme already exists' });
+    }
     res.status(500).json({ message: 'Error creating programme', error: error.message });
   }
 });

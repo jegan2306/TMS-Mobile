@@ -76,7 +76,7 @@ const Departments = () => {
       fetchDepartments();
       handleClose();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error saving department');
+      setError(error.response?.data?.message || error.message || 'Error saving department');
     }
   };
 

@@ -60,10 +60,14 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
   try {
     const { username, phone, email, password, role, department, programme } = req.body;
 
+    if (!username || !email || !password || !role) {
+      return res.status(400).json({ message: 'Username, email, password, and role are required' });
+    }
+
     // Check if user exists
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase().trim() }, { username: username.trim() }] });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'User with this email or username already exists' });
     }
 
     // Check if role exists
@@ -73,13 +77,13 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
     }
 
     const user = new User({
-      username,
-      phone,
-      email,
+      username: username.trim(),
+      phone: phone ? phone.trim() : '',
+      email: email.toLowerCase().trim(),
       password,
       role,
-      department,
-      programme
+      department: department || null,
+      programme: programme || null
     });
 
     await user.save();
@@ -95,6 +99,9 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
       user: populatedUser
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Username or Email already exists' });
+    }
     res.status(500).json({ message: 'Error creating user', error: error.message });
   }
 });

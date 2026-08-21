@@ -31,13 +31,26 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
   try {
     const { name, shortName } = req.body;
 
-    // Check if department exists
-    const existingDept = await Department.findOne({ name });
-    if (existingDept) {
-      return res.status(400).json({ message: 'Department already exists' });
+    if (!name || !shortName) {
+      return res.status(400).json({ message: 'Department name and short name are required' });
     }
 
-    const department = new Department({ name, shortName });
+    // Check if department exists by name or shortName
+    const existingDept = await Department.findOne({
+      $or: [
+        { name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } },
+        { shortName: { $regex: new RegExp(`^${shortName.trim()}$`, 'i') } }
+      ]
+    });
+
+    if (existingDept) {
+      if (existingDept.name.toLowerCase() === name.trim().toLowerCase()) {
+        return res.status(400).json({ message: 'Department name already exists' });
+      }
+      return res.status(400).json({ message: 'Department short name already exists' });
+    }
+
+    const department = new Department({ name: name.trim(), shortName: shortName.trim() });
     await department.save();
 
     res.status(201).json({
@@ -45,6 +58,9 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
       department
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Department already exists' });
+    }
     res.status(500).json({ message: 'Error creating department', error: error.message });
   }
 });

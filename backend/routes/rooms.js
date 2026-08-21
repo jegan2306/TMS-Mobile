@@ -43,13 +43,26 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
   try {
     const { roomNumber, department, programme, block } = req.body;
 
+    if (!roomNumber || !department || !programme || !block) {
+      return res.status(400).json({ message: 'Room number, department, programme, and block are required' });
+    }
+
     // Check if block exists
     const blk = await Block.findById(block);
     if (!blk) {
       return res.status(400).json({ message: 'Block not found' });
     }
 
-    const room = new Room({ roomNumber, department, programme, block });
+    // Check for duplicate room number in same block
+    const existingRoom = await Room.findOne({
+      block,
+      roomNumber: { $regex: new RegExp(`^${roomNumber.trim()}$`, 'i') }
+    });
+    if (existingRoom) {
+      return res.status(400).json({ message: 'Room number already exists in this block' });
+    }
+
+    const room = new Room({ roomNumber: roomNumber.trim(), department, programme, block });
     await room.save();
 
     const populatedRoom = await Room.findById(room._id).populate('department').populate('programme').populate('block');
@@ -59,6 +72,9 @@ router.post('/', auth, isSuperAdmin, async (req, res) => {
       room: populatedRoom
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Room already exists' });
+    }
     res.status(500).json({ message: 'Error creating room', error: error.message });
   }
 });

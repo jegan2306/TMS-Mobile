@@ -24,6 +24,7 @@ const seedData = async () => {
     const roles = [
       { name: 'Superadmin' },
       { name: 'User' },
+      { name: 'Faculty' },
       { name: 'Networking Staff' },
       { name: 'Plumber' },
       { name: 'Electrician' },

@@ -27,7 +27,7 @@ const auth = async (req, res, next) => {
 // Middleware to check if user is SuperAdmin
 const isSuperAdmin = async (req, res, next) => {
   try {
-    if (req.user.role.name !== 'Superadmin') {
+    if (!req.user || !req.user.role || req.user.role.name !== 'Superadmin') {
       return res.status(403).json({ message: 'Access denied. Super Admin only.' });
     }
     next();
@@ -39,7 +39,8 @@ const isSuperAdmin = async (req, res, next) => {
 // Middleware to check specific roles
 const hasRole = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role.name)) {
+    const roleName = req.user?.role?.name;
+    if (!roleName || !roles.includes(roleName)) {
       return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
     next();

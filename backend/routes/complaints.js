@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Complaint = require('../models/Complaint');
+const Room = require('../models/Room');
+const Block = require('../models/Block');
 const { auth, isSuperAdmin, hasRole } = require('../middleware/auth');
 
 // Get all complaints (filtered by role)
@@ -8,14 +10,26 @@ router.get('/', auth, async (req, res) => {
   try {
     const { status, blockId, roomId, complaintType, assignedTo } = req.query;
     let query = {};
+    const roleName = req.user.role?.name;
 
     // Filter based on user role
-    if (req.user.role.name === 'User') {
+    if (roleName === 'User') {
       // Users can only see their own complaints
       query.raisedBy = req.user._id;
-    } else if (['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(req.user.role.name)) {
-      // Staff can only see complaints assigned to them
-      query.assignedTo = req.user._id;
+    } else if (roleName === 'Faculty') {
+      // Faculty can see complaints for their department, assigned to them, or raised by them
+      const orConditions = [{ raisedBy: req.user._id }, { assignedTo: req.user._id }];
+      if (req.user.department) {
+        orConditions.push({ department: req.user.department._id || req.user.department });
+      }
+      query.$or = orConditions;
+    } else if (['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(roleName)) {
+      // Staff can see complaints assigned to them or in their department
+      const orConditions = [{ assignedTo: req.user._id }];
+      if (req.user.department) {
+        orConditions.push({ department: req.user.department._id || req.user.department });
+      }
+      query.$or = orConditions;
     }
     // Superadmin can see all complaints
 
@@ -26,9 +40,9 @@ router.get('/', auth, async (req, res) => {
     if (complaintType) query.complaintType = complaintType;
     if (assignedTo) query.assignedTo = assignedTo;
 
-    // Filter by department for non-superadmin
-    if (req.user.role.name !== 'Superadmin' && req.user.department) {
-      query.department = req.user.department._id;
+    // Filter by department for other non-superadmin roles if department set and not using $or
+    if (roleName !== 'Superadmin' && roleName !== 'Faculty' && !['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(roleName) && req.user.department) {
+      query.department = req.user.department._id || req.user.department;
     }
 
     const complaints = await Complaint.find(query)
@@ -65,10 +79,25 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// Create complaint (User and Superadmin)
-router.post('/', auth, hasRole('Superadmin', 'User'), async (req, res) => {
+// Create complaint (All authenticated users)
+router.post('/', auth, async (req, res) => {
   try {
     const { block, room, complaintType, remarks, attachment } = req.body;
+
+    // Derive department from the room or block if available, fallback to user's department
+    let departmentId = req.user.department?._id || req.user.department;
+    if (room) {
+      const roomDoc = await Room.findById(room);
+      if (roomDoc && roomDoc.department) {
+        departmentId = roomDoc.department;
+      }
+    }
+    if (!departmentId && block) {
+      const blockDoc = await Block.findById(block);
+      if (blockDoc && blockDoc.department) {
+        departmentId = blockDoc.department;
+      }
+    }
 
     const complaint = new Complaint({
       block,
@@ -77,7 +106,7 @@ router.post('/', auth, hasRole('Superadmin', 'User'), async (req, res) => {
       remarks,
       attachment,
       raisedBy: req.user._id,
-      department: req.user.department
+      department: departmentId
     });
 
     await complaint.save();
@@ -97,8 +126,8 @@ router.post('/', auth, hasRole('Superadmin', 'User'), async (req, res) => {
   }
 });
 
-// Assign complaint (Superadmin only)
-router.put('/:id/assign', auth, isSuperAdmin, async (req, res) => {
+// Assign complaint (Superadmin and Faculty)
+router.put('/:id/assign', auth, hasRole('Superadmin', 'Faculty'), async (req, res) => {
   try {
     const { assignedTo } = req.body;
 
@@ -126,8 +155,8 @@ router.put('/:id/assign', auth, isSuperAdmin, async (req, res) => {
   }
 });
 
-// Update complaint status (Staff and Superadmin)
-router.put('/:id/status', auth, hasRole('Superadmin', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'), async (req, res) => {
+// Update complaint status (Staff, Faculty, and Superadmin)
+router.put('/:id/status', auth, hasRole('Superadmin', 'Faculty', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'), async (req, res) => {
   try {
     const { status } = req.body;
 
@@ -195,14 +224,23 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// Delete complaint (Superadmin only)
-router.delete('/:id', auth, isSuperAdmin, async (req, res) => {
+// Delete complaint (Superadmin and complaint creator)
+router.delete('/:id', auth, async (req, res) => {
   try {
-    const complaint = await Complaint.findByIdAndDelete(req.params.id);
+    const complaint = await Complaint.findById(req.params.id);
 
     if (!complaint) {
       return res.status(404).json({ message: 'Complaint not found' });
     }
+
+    const isOwner = complaint.raisedBy && complaint.raisedBy.toString() === req.user._id.toString();
+    const isSuper = req.user.role && req.user.role.name === 'Superadmin';
+
+    if (!isSuper && !isOwner) {
+      return res.status(403).json({ message: 'Not authorized to delete this complaint' });
+    }
+
+    await Complaint.findByIdAndDelete(req.params.id);
 
     res.json({ message: 'Complaint deleted successfully' });
   } catch (error) {
@@ -211,3 +249,4 @@ router.delete('/:id', auth, isSuperAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
