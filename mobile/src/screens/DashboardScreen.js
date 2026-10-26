@@ -13,6 +13,7 @@ import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { dashboardAPI, complaintAPI } from '../services/api';
 import ComplaintCard from '../components/ComplaintCard';
+import SignOutModal from '../components/SignOutModal';
 
 const CATEGORIES = [
   { name: 'PC Hardware', icon: 'hardware-chip-outline', color: '#EC4899' },
@@ -29,7 +30,8 @@ export default function DashboardScreen({
   onOpenComplaintDetail,
   onSelectCategoryFilter
 }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [signOutVisible, setSignOutVisible] = useState(false);
   const [stats, setStats] = useState({
     totalComplaints: 0,
     pendingComplaints: 0,
@@ -86,9 +88,19 @@ export default function DashboardScreen({
         <View style={styles.welcomeLeft}>
           <Text style={styles.greeting}>Welcome back,</Text>
           <Text style={styles.userName}>{user?.username || 'User'}</Text>
-          <View style={styles.userRoleBadge}>
-            <Ionicons name="shield-checkmark" size={12} color={colors.primaryLight} />
-            <Text style={styles.userRoleText}>{user?.role?.name || 'Standard User'}</Text>
+          <View style={styles.roleRow}>
+            <View style={styles.userRoleBadge}>
+              <Ionicons name="shield-checkmark" size={12} color={colors.primaryLight} />
+              <Text style={styles.userRoleText}>{user?.role?.name || 'Standard User'}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.quickSignOutBtn}
+              onPress={() => setSignOutVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-out-outline" size={13} color="#EF4444" />
+              <Text style={styles.quickSignOutText}>Sign Out</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -109,6 +121,16 @@ export default function DashboardScreen({
           >
             <Ionicons name="person-add" size={18} color="#FFF" />
             <Text style={styles.raiseBtnHeaderText}>Assign Tickets</Text>
+          </TouchableOpacity>
+        )}
+
+        {user?.role?.name === 'Faculty' && (
+          <TouchableOpacity
+            style={[styles.raiseBtnHeader, { backgroundColor: '#10B981' }]}
+            onPress={() => onNavigateToTab('Reports')}
+          >
+            <Ionicons name="bar-chart" size={18} color="#FFF" />
+            <Text style={styles.raiseBtnHeaderText}>Reports</Text>
           </TouchableOpacity>
         )}
 
@@ -222,6 +244,13 @@ export default function DashboardScreen({
           ))
         )}
       </View>
+
+      <SignOutModal
+        visible={signOutVisible}
+        user={user}
+        onClose={() => setSignOutVisible(false)}
+        onConfirm={logout}
+      />
     </ScrollView>
   );
 }
@@ -263,12 +292,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 6,
   },
   userRoleText: {
     fontSize: 12,
     color: colors.primaryLight,
     fontWeight: '600',
+  },
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+    flexWrap: 'wrap',
+  },
+  quickSignOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+  },
+  quickSignOutText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#EF4444',
   },
   raiseBtnHeader: {
     flexDirection: 'row',

@@ -1,50 +1,71 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
+import SignOutModal from './SignOutModal';
 
 export default function Header({ onOpenServerConfig, title }) {
-  const { user, isServerOnline } = useAuth();
+  const { user, logout, isServerOnline } = useAuth();
+  const [signOutVisible, setSignOutVisible] = useState(false);
   const roleName = user?.role?.name || 'Guest';
 
   return (
-    <View style={styles.container}>
-      <View style={styles.left}>
-        <View style={styles.logoBadge}>
-          <Ionicons name="construct" size={18} color="#FFF" />
-        </View>
-        <View>
-          <Text style={styles.title}>{title || 'TMS Mobile'}</Text>
-          <View style={styles.connectionRow}>
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: isServerOnline ? '#10B981' : '#F59E0B' }
-              ]}
-            />
-            <Text style={styles.statusText}>
-              {isServerOnline ? 'Backend Connected' : 'Offline / Demo Mode'}
-            </Text>
+    <>
+      <View style={styles.container}>
+        <View style={styles.left}>
+          <View style={styles.logoBadge}>
+            <Ionicons name="construct" size={18} color="#FFF" />
           </View>
+          <View>
+            <Text style={styles.title}>{title || 'TMS Mobile'}</Text>
+            <View style={styles.connectionRow}>
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: isServerOnline ? '#10B981' : '#F59E0B' }
+                ]}
+              />
+              <Text style={styles.statusText}>
+                {isServerOnline ? 'Backend Connected' : 'Offline / Demo Mode'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.right}>
+          {user && (
+            <View style={styles.roleChip}>
+              <Text style={styles.roleText}>{roleName}</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={onOpenServerConfig}
+            accessibilityLabel="Server Settings"
+          >
+            <Ionicons name="server-outline" size={19} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {user && (
+            <TouchableOpacity
+              style={[styles.iconButton, styles.logoutButton]}
+              onPress={() => setSignOutVisible(true)}
+              accessibilityLabel="Sign Out"
+            >
+              <Ionicons name="log-out-outline" size={19} color="#EF4444" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      <View style={styles.right}>
-        {user && (
-          <View style={styles.roleChip}>
-            <Text style={styles.roleText}>{roleName}</Text>
-          </View>
-        )}
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onOpenServerConfig}
-          accessibilityLabel="Server Settings"
-        >
-          <Ionicons name="server-outline" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
-    </View>
+      <SignOutModal
+        visible={signOutVisible}
+        user={user}
+        onClose={() => setSignOutVisible(false)}
+        onConfirm={logout}
+      />
+    </>
   );
 }
 
@@ -126,4 +147,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
+  logoutButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
 });
+

@@ -29,12 +29,12 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import { complaintAPI } from './src/services/api';
 
 const ALL_TABS = [
-  { key: 'Dashboard', label: 'Dashboard', icon: 'grid-outline', activeIcon: 'grid', roles: ['Superadmin', 'User', 'Faculty', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'] },
-  { key: 'Complaints', label: 'Tickets', icon: 'document-text-outline', activeIcon: 'document-text', roles: ['Superadmin', 'User', 'Faculty', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'] },
+  { key: 'Dashboard', label: 'Dashboard', icon: 'grid-outline', activeIcon: 'grid' },
+  { key: 'Complaints', label: 'Tickets', icon: 'document-text-outline', activeIcon: 'document-text' },
   { key: 'Raise', label: 'Raise', icon: 'add-circle-outline', activeIcon: 'add-circle', isFab: true, roles: ['User'] }, // ONLY User can raise complaints!
   { key: 'Reports', label: 'Reports', icon: 'bar-chart-outline', activeIcon: 'bar-chart', roles: ['Superadmin', 'Faculty'] },
   { key: 'Masters', label: 'Campus', icon: 'business-outline', activeIcon: 'business', roles: ['Superadmin'] },
-  { key: 'Settings', label: 'Settings', icon: 'settings-outline', activeIcon: 'settings', roles: ['Superadmin', 'User', 'Faculty', 'Networking Staff', 'Plumber', 'Electrician', 'Software Developer'] },
+  { key: 'Settings', label: 'Settings', icon: 'settings-outline', activeIcon: 'settings' },
 ];
 
 function MainApp() {
@@ -145,27 +145,43 @@ function MainApp() {
   };
 
   const handleDeleteComplaint = async (id) => {
-    Alert.alert(
-      'Delete Ticket',
-      'Are you sure you want to permanently delete this complaint?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await complaintAPI.delete(id);
-              setDetailModalVisible(false);
-              setReloadTrigger(prev => prev + 1);
-              Alert.alert('Deleted', 'Ticket deleted successfully');
-            } catch (e) {
-              Alert.alert('Error', e.message || 'Failed to delete ticket');
-            }
-          }
+    const doDelete = async () => {
+      try {
+        await complaintAPI.delete(id);
+        setDetailModalVisible(false);
+        setReloadTrigger(prev => prev + 1);
+        if (Platform.OS === 'web') {
+          window.alert('Ticket deleted successfully');
+        } else {
+          Alert.alert('Deleted', 'Ticket deleted successfully');
         }
-      ]
-    );
+      } catch (e) {
+        if (Platform.OS === 'web') {
+          window.alert(e.message || 'Failed to delete ticket');
+        } else {
+          Alert.alert('Error', e.message || 'Failed to delete ticket');
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to permanently delete this complaint?')) {
+        await doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Ticket',
+        'Are you sure you want to permanently delete this complaint?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: doDelete
+          }
+        ]
+      );
+    }
   };
 
   return (

@@ -1,29 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  Alert
+  TouchableOpacity
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useAuth, DEMO_USERS } from '../context/AuthContext';
 import { getCurrentCachedApiUrl } from '../config/apiConfig';
+import SignOutModal from '../components/SignOutModal';
 
 export default function SettingsScreen({ onOpenServerConfig }) {
   const { user, logout, quickLogin, isServerOnline } = useAuth();
+  const [signOutVisible, setSignOutVisible] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: logout }
-      ]
-    );
+    setSignOutVisible(true);
   };
 
   const handleSwitchUser = async (email) => {
@@ -150,6 +144,13 @@ export default function SettingsScreen({ onOpenServerConfig }) {
         <Ionicons name="log-out-outline" size={20} color="#EF4444" />
         <Text style={styles.logoutText}>Sign Out of TMS</Text>
       </TouchableOpacity>
+
+      <SignOutModal
+        visible={signOutVisible}
+        user={user}
+        onClose={() => setSignOutVisible(false)}
+        onConfirm={logout}
+      />
     </ScrollView>
   );
 }
