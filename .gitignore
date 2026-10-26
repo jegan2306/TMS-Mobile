@@ -21,6 +21,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Expo
+.expo/
+**/.expo/
+
 # Editor directories and files
 .idea/
 .vscode/

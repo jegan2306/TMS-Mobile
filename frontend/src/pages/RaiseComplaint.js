@@ -14,8 +14,10 @@ import {
   CircularProgress,
   Alert,
   Grid,
+  Chip,
+  Stack,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, ArrowBack as BackIcon, Speed as QuickIcon } from '@mui/icons-material';
 import { complaintAPI, blockAPI, roomAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -76,7 +78,7 @@ const RaiseComplaint = () => {
 
     try {
       await complaintAPI.create(formData);
-      setSuccess('Complaint raised successfully!');
+      setSuccess('Complaint submitted successfully! Redirecting to complaints list...');
       setFormData({
         block: '',
         room: '',
@@ -86,7 +88,7 @@ const RaiseComplaint = () => {
       setRooms([]);
       setTimeout(() => {
         navigate('/complaints');
-      }, 2000);
+      }, 1500);
     } catch (error) {
       setError(error.response?.data?.message || 'Error raising complaint');
     } finally {
@@ -105,6 +107,15 @@ const RaiseComplaint = () => {
     'Other',
   ];
 
+  const quickRemarks = [
+    'System not powering on',
+    'Internet disconnections on Ethernet port',
+    'Projector display flickering',
+    'Software crashing during startup',
+    'Water leakage in washroom counter',
+    'AC cooling insufficient'
+  ];
+
   if (initialLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -113,31 +124,63 @@ const RaiseComplaint = () => {
     );
   }
 
+  if (user?.role?.name !== 'User') {
+    return (
+      <Box sx={{ maxWidth: 600, mx: 'auto', mt: 6, p: 4, textAlign: 'center', bgcolor: '#fff', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+        <Typography variant="h5" color="error" sx={{ fontWeight: 800, mb: 1.5 }}>
+          Access Restricted
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          In this project, only Users can raise complaints. Superadmins assign complaints and category staff resolve them.
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => navigate('/complaints')}
+          sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2 }}
+        >
+          Go to Complaints Management
+        </Button>
+      </Box>
+    );
+  }
+
   return (
-    <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-          Raise Complaint
+    <Box sx={{ maxWidth: 900, mx: 'auto' }}>
+      {/* Top Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+        <Button
+          onClick={() => navigate('/complaints')}
+          startIcon={<BackIcon />}
+          sx={{ textTransform: 'none', color: 'text.secondary' }}
+        >
+          Back to Complaints
+        </Button>
+      </Box>
+
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, background: 'linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 0.5 }}>
+          Raise New Complaint
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Submit a new complaint for any issue you're experiencing.
+          Report technical, infrastructure, or maintenance issues for prompt resolution.
         </Typography>
       </Box>
 
-      <Card>
-        <CardContent sx={{ p: 4 }}>
-          {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
+      <Card sx={{ borderRadius: 4, boxShadow: '0 8px 30px rgba(0,0,0,0.06)', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+          {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{success}</Alert>}
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth required>
-                  <InputLabel>Block Name</InputLabel>
+                  <InputLabel>Select Block</InputLabel>
                   <Select
                     value={formData.block}
-                    label="Block Name"
+                    label="Select Block"
                     onChange={(e) => handleBlockChange(e.target.value)}
+                    sx={{ borderRadius: 2 }}
                   >
                     {blocks.map((block) => (
                       <MenuItem key={block._id} value={block._id}>
@@ -150,11 +193,12 @@ const RaiseComplaint = () => {
 
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth required disabled={!formData.block}>
-                  <InputLabel>Room Number</InputLabel>
+                  <InputLabel>Select Room</InputLabel>
                   <Select
                     value={formData.room}
-                    label="Room Number"
+                    label="Select Room"
                     onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                    sx={{ borderRadius: 2 }}
                   >
                     {rooms.map((room) => (
                       <MenuItem key={room._id} value={room._id}>
@@ -167,11 +211,12 @@ const RaiseComplaint = () => {
 
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth required>
-                  <InputLabel>Complaint Type</InputLabel>
+                  <InputLabel>Complaint Category / Type</InputLabel>
                   <Select
                     value={formData.complaintType}
-                    label="Complaint Type"
+                    label="Complaint Category / Type"
                     onChange={(e) => setFormData({ ...formData, complaintType: e.target.value })}
+                    sx={{ borderRadius: 2 }}
                   >
                     {complaintTypes.map((type) => (
                       <MenuItem key={type} value={type}>
@@ -186,32 +231,71 @@ const RaiseComplaint = () => {
                 <TextField
                   fullWidth
                   label="Raised By"
-                  value={user?.username || ''}
+                  value={`${user?.username || ''} (${user?.role?.name || ''})`}
                   disabled
+                  sx={{ borderRadius: 2 }}
                 />
               </Grid>
 
               <Grid item xs={12}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                  Quick Suggestions for Remarks:
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+                  {quickRemarks.map((remark) => (
+                    <Chip
+                      key={remark}
+                      label={remark}
+                      onClick={() => setFormData({ ...formData, remarks: remark })}
+                      size="small"
+                      icon={<QuickIcon fontSize="small" />}
+                      sx={{
+                        cursor: 'pointer',
+                        bgcolor: '#e0e7ff',
+                        color: '#3730a3',
+                        fontWeight: 500,
+                        '&:hover': { bgcolor: '#c7d2fe' }
+                      }}
+                    />
+                  ))}
+                </Stack>
                 <TextField
                   fullWidth
-                  label="Complaint Remarks"
+                  label="Complaint Description / Remarks"
                   value={formData.remarks}
                   onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
                   required
                   multiline
                   rows={4}
-                  placeholder="Describe the issue in detail..."
+                  placeholder="Provide details about the issue (e.g., system number, symptoms, location inside room)..."
+                  sx={{ borderRadius: 2 }}
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid item xs={12} sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 1 }}>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => navigate('/complaints')}
+                  sx={{ px: 3, borderRadius: 2, textTransform: 'none' }}
+                >
+                  Cancel
+                </Button>
                 <Button
                   type="submit"
                   variant="contained"
                   size="large"
                   disabled={loading}
                   startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
-                  sx={{ px: 4, py: 1.5 }}
+                  sx={{
+                    px: 4,
+                    py: 1.2,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
+                  }}
                 >
                   {loading ? 'Submitting...' : 'Submit Complaint'}
                 </Button>

@@ -16,11 +16,7 @@ const getRoleQuery = (user) => {
     }
     query.$or = orConditions;
   } else if (['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(roleName)) {
-    const orConditions = [{ assignedTo: user._id }];
-    if (user.department) {
-      orConditions.push({ department: user.department._id || user.department });
-    }
-    query.$or = orConditions;
+    query.$or = [{ raisedBy: user._id }, { assignedTo: user._id }];
   } else if (roleName !== 'Superadmin' && user.department) {
     query.department = user.department._id || user.department;
   }

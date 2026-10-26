@@ -83,14 +83,14 @@ function App() {
         {/* Transaction Screens */}
         <Route path="complaints" element={<Complaints />} />
         <Route path="raise-complaint" element={
-          <ProtectedRoute allowedRoles={['Superadmin', 'User']}>
+          <ProtectedRoute allowedRoles={['User']}>
             <RaiseComplaint />
           </ProtectedRoute>
         } />
         
-        {/* Reports - SuperAdmin Only */}
+        {/* Reports - SuperAdmin & Faculty */}
         <Route path="reports" element={
-          <ProtectedRoute allowedRoles={['Superadmin']}>
+          <ProtectedRoute allowedRoles={['Superadmin', 'Faculty']}>
             <Reports />
           </ProtectedRoute>
         } />

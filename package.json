@@ -1,0 +1,13 @@
+{
+  "name": "tms-project",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node backend/server.js",
+    "backend": "cd backend && node server.js",
+    "backend:seed": "cd backend && node seed.js",
+    "mobile": "cd mobile && npx expo start --go",
+    "mobile:web": "cd mobile && npx expo start --web",
+    "mobile:qr": "cd mobile && node print-qr.js",
+    "frontend": "cd frontend && npm start"
+  }
+}

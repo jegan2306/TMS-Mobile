@@ -24,12 +24,8 @@ router.get('/', auth, async (req, res) => {
       }
       query.$or = orConditions;
     } else if (['Networking Staff', 'Plumber', 'Electrician', 'Software Developer'].includes(roleName)) {
-      // Staff can see complaints assigned to them or in their department
-      const orConditions = [{ assignedTo: req.user._id }];
-      if (req.user.department) {
-        orConditions.push({ department: req.user.department._id || req.user.department });
-      }
-      query.$or = orConditions;
+      // Staff see complaints assigned directly to them, or raised by them
+      query.$or = [{ raisedBy: req.user._id }, { assignedTo: req.user._id }];
     }
     // Superadmin can see all complaints
 
@@ -79,8 +75,8 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// Create complaint (All authenticated users)
-router.post('/', auth, async (req, res) => {
+// Create complaint (Only User can raise complaints)
+router.post('/', auth, hasRole('User'), async (req, res) => {
   try {
     const { block, room, complaintType, remarks, attachment } = req.body;
 
@@ -126,14 +122,23 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Assign complaint (Superadmin and Faculty)
-router.put('/:id/assign', auth, hasRole('Superadmin', 'Faculty'), async (req, res) => {
+// Assign complaint (Superadmin Only)
+router.put('/:id/assign', auth, hasRole('Superadmin'), async (req, res) => {
   try {
-    const { assignedTo } = req.body;
+    const { assignedTo, status } = req.body;
+
+    const updateFields = {};
+    if (assignedTo) {
+      updateFields.assignedTo = assignedTo;
+      updateFields.status = status || 'Assigned';
+    } else {
+      updateFields.assignedTo = null;
+      updateFields.status = 'Pending';
+    }
 
     const complaint = await Complaint.findByIdAndUpdate(
       req.params.id,
-      { assignedTo, status: 'Assigned' },
+      updateFields,
       { new: true, runValidators: true }
     )
       .populate('block')
@@ -147,7 +152,7 @@ router.put('/:id/assign', auth, hasRole('Superadmin', 'Faculty'), async (req, re
     }
 
     res.json({
-      message: 'Complaint assigned successfully',
+      message: assignedTo ? 'Complaint assigned successfully' : 'Complaint unassigned successfully',
       complaint
     });
   } catch (error) {

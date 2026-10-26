@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Complaint = require('../models/Complaint');
-const { auth, isSuperAdmin } = require('../middleware/auth');
+const { auth, isSuperAdmin, hasRole } = require('../middleware/auth');
 
-// Generate complaint report (Superadmin only)
-router.get('/', auth, isSuperAdmin, async (req, res) => {
+// Generate complaint report (Superadmin and Faculty)
+router.get('/', auth, hasRole('Superadmin', 'Faculty'), async (req, res) => {
   try {
     const { department, programme, complaintType, status, assignee, startDate, endDate } = req.query;
     let query = {};
@@ -68,8 +68,8 @@ router.get('/', auth, isSuperAdmin, async (req, res) => {
   }
 });
 
-// Export report as CSV (Superadmin only)
-router.get('/export', auth, isSuperAdmin, async (req, res) => {
+// Export report as CSV (Superadmin and Faculty)
+router.get('/export', auth, hasRole('Superadmin', 'Faculty'), async (req, res) => {
   try {
     const { department, programme, complaintType, status, assignee, startDate, endDate } = req.query;
     let query = {};
